@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Appointments - Doctor Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🏥 Mini Hospital - Doctor Portal</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="doctor-dashboard.html" class="nav-link">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-patients.html" class="nav-link">My Patients</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-appointments.html" class="nav-link active">Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>My Appointments</h1>
+                <p>Manage your appointment schedule</p>
+            </div>
+
+            <!-- Filter Options -->
+            <div class="filter-section">
+                <div class="filter-options">
+                    <button id="allAppointmentsBtn" class="filter-btn active">All</button>
+                    <button id="todayAppointmentsBtn" class="filter-btn">Today</button>
+                    <button id="upcomingAppointmentsBtn" class="filter-btn">Upcoming</button>
+                </div>
+                <div class="search-container">
+                    <input type="text" id="appointmentSearch" placeholder="Search appointments..." class="search-input">
+                </div>
+            </div>
+
+            <!-- Appointments List -->
+            <div class="appointments-section">
+                <div class="section-header">
+                    <h2>Appointment Schedule</h2>
+                    <div class="appointment-stats">
+                        <span id="appointmentCount">0 appointments</span>
+                    </div>
+                </div>
+
+                <div id="appointmentsList" class="appointments-list">
+                    <!-- Appointments will be dynamically loaded here -->
+                </div>
+
+                <div id="noAppointmentsMessage" class="no-data-message" style="display: none;">
+                    <p>No appointments found.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentFilter = 'all';
+        let allAppointments = [];
+
+        // Check if user is logged in and is a doctor
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser || currentUser.userType !== 'doctor') {
+                alert('Access denied. Please login as a doctor.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            loadMyAppointments();
+            
+            // Filter buttons
+            document.getElementById('allAppointmentsBtn').addEventListener('click', () => setFilter('all'));
+            document.getElementById('todayAppointmentsBtn').addEventListener('click', () => setFilter('today'));
+            document.getElementById('upcomingAppointmentsBtn').addEventListener('click', () => setFilter('upcoming'));
+            
+            // Search functionality
+            document.getElementById('appointmentSearch').addEventListener('input', function() {
+                filterAppointments();
+            });
+        });
+
+        function loadMyAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            // Get appointments for this doctor
+            allAppointments = appointments.filter(appointment => 
+                appointment.doctor.includes(currentUser.fullName)
+            ).sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            displayAppointments(allAppointments);
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(filter + 'AppointmentsBtn').classList.add('active');
+            
+            filterAppointments();
+        }
+
+        function filterAppointments() {
+            let filteredAppointments = [...allAppointments];
+            const today = new Date().toISOString().split('T')[0];
+            const searchTerm = document.getElementById('appointmentSearch').value.toLowerCase();
+            
+            // Apply date filter
+            switch(currentFilter) {
+                case 'today':
+                    filteredAppointments = filteredAppointments.filter(apt => apt.date === today);
+                    break;
+                case 'upcoming':
+                    filteredAppointments = filteredAppointments.filter(apt => apt.date >= today);
+                    break;
+                case 'all':
+                default:
+                    // No date filtering
+                    break;
+            }
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredAppointments = filteredAppointments.filter(apt => 
+                    apt.patient.toLowerCase().includes(searchTerm) ||
+                    apt.notes.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            displayAppointments(filteredAppointments);
+        }
+
+        function displayAppointments(appointments) {
+            const appointmentsList = document.getElementById('appointmentsList');
+            const noAppointmentsMsg = document.getElementById('noAppointmentsMessage');
+            const appointmentCount = document.getElementById('appointmentCount');
+            
+            appointmentCount.textContent = `${appointments.length} appointments`;
+            
+            if (appointments.length === 0) {
+                appointmentsList.innerHTML = '';
+                noAppointmentsMsg.style.display = 'block';
+            } else {
+                noAppointmentsMsg.style.display = 'none';
+                appointmentsList.innerHTML = appointments.map(appointment => `
+                    <div class="appointment-card">
+                        <div class="appointment-info">
+                            <h3>${appointment.patient}</h3>
+                            <p><strong>Date:</strong> ${appointment.date}</p>
+                            <p><strong>Time:</strong> ${appointment.time}</p>
+                            ${appointment.notes ? `<p><strong>Notes:</strong> ${appointment.notes}</p>` : ''}
+                            <p><strong>Booked:</strong> ${appointment.dateBooked}</p>
+                        </div>
+                        <div class="appointment-actions">
+                            <button onclick="viewAppointmentDetails(${appointment.id})" class="edit-btn">View Details</button>
+                            <button onclick="cancelAppointment(${appointment.id})" class="delete-btn">Cancel</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function viewAppointmentDetails(appointmentId) {
+            const appointment = allAppointments.find(apt => apt.id === appointmentId);
+            if (appointment) {
+                let details = `Appointment Details:\n\n`;
+                details += `Patient: ${appointment.patient}\n`;
+                details += `Date: ${appointment.date}\n`;
+                details += `Time: ${appointment.time}\n`;
+                if (appointment.notes) details += `Notes: ${appointment.notes}\n`;
+                details += `Booked on: ${appointment.dateBooked}\n`;
+                
+                alert(details);
+            }
+        }
+
+        function cancelAppointment(appointmentId) {
+            if (confirm('Are you sure you want to cancel this appointment?')) {
+                let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+                appointments = appointments.filter(apt => apt.id !== appointmentId);
+                localStorage.setItem('appointments', JSON.stringify(appointments));
+                
+                loadMyAppointments();
+                alert('Appointment cancelled successfully!');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Patients - Doctor Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🏥 Mini Hospital - Doctor Portal</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="doctor-dashboard.html" class="nav-link">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-patients.html" class="nav-link active">My Patients</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-appointments.html" class="nav-link">Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>My Patients</h1>
+                <p>View and manage your patient records</p>
+            </div>
+
+            <!-- Patients List -->
+            <div class="patients-section">
+                <div class="section-header">
+                    <h2>Patient Records</h2>
+                    <div class="search-container">
+                        <input type="text" id="patientSearch" placeholder="Search patients..." class="search-input">
+                    </div>
+                </div>
+
+                <div id="patientsList" class="patients-list">
+                    <!-- Patients will be dynamically loaded here -->
+                </div>
+
+                <div id="noPatientsMessage" class="no-data-message" style="display: none;">
+                    <p>No patients found. Patients will appear here once they book appointments with you.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in and is a doctor
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser || currentUser.userType !== 'doctor') {
+                alert('Access denied. Please login as a doctor.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            loadMyPatients();
+            
+            // Search functionality
+            document.getElementById('patientSearch').addEventListener('input', function() {
+                filterPatients(this.value);
+            });
+        });
+
+        function loadMyPatients() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            // Get unique patients for this doctor
+            const myPatients = new Map();
+            appointments.forEach(appointment => {
+                if (appointment.doctor.includes(currentUser.fullName)) {
+                    const patientName = appointment.patient.split(' (Age:')[0]; // Extract just the name
+                    if (!myPatients.has(patientName)) {
+                        myPatients.set(patientName, {
+                            name: patientName,
+                            lastAppointment: appointment.date,
+                            totalAppointments: 0,
+                            appointments: []
+                        });
+                    }
+                    myPatients.get(patientName).totalAppointments++;
+                    myPatients.get(patientName).appointments.push(appointment);
+                }
+            });
+            
+            const patientsList = document.getElementById('patientsList');
+            const noPatientsMsg = document.getElementById('noPatientsMessage');
+            
+            if (myPatients.size === 0) {
+                patientsList.innerHTML = '';
+                noPatientsMsg.style.display = 'block';
+            } else {
+                noPatientsMsg.style.display = 'none';
+                const patientsArray = Array.from(myPatients.values());
+                patientsArray.sort((a, b) => new Date(b.lastAppointment) - new Date(a.lastAppointment));
+                
+                patientsList.innerHTML = patientsArray.map(patient => `
+                    <div class="patient-card" data-patient-name="${patient.name}">
+                        <div class="patient-info">
+                            <h3>${patient.name}</h3>
+                            <p><strong>Total Appointments:</strong> ${patient.totalAppointments}</p>
+                            <p><strong>Last Visit:</strong> ${patient.lastAppointment}</p>
+                            <p><strong>Next Appointment:</strong> ${getNextAppointment(patient.appointments)}</p>
+                        </div>
+                        <div class="patient-actions">
+                            <button onclick="viewPatientDetails('${patient.name}')" class="edit-btn">View Details</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function getNextAppointment(appointments) {
+            const today = new Date().toISOString().split('T')[0];
+            const upcoming = appointments
+                .filter(apt => apt.date >= today)
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            return upcoming.length > 0 ? upcoming[0].date : 'None scheduled';
+        }
+
+        function filterPatients(searchTerm) {
+            const patientCards = document.querySelectorAll('.patient-card');
+            const searchLower = searchTerm.toLowerCase();
+            
+            patientCards.forEach(card => {
+                const patientName = card.getAttribute('data-patient-name').toLowerCase();
+                if (patientName.includes(searchLower)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function viewPatientDetails(patientName) {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            const patientAppointments = appointments.filter(appointment => 
+                appointment.doctor.includes(currentUser.fullName) && 
+                appointment.patient.includes(patientName)
+            );
+            
+            let details = `Patient: ${patientName}\n\nAppointment History:\n\n`;
+            patientAppointments.forEach((apt, index) => {
+                details += `${index + 1}. Date: ${apt.date}\n`;
+                details += `   Time: ${apt.time}\n`;
+                if (apt.notes) details += `   Notes: ${apt.notes}\n`;
+                details += '\n';
+            });
+            
+            alert(details);
+        }
+    </script>
+</body>
+</html>

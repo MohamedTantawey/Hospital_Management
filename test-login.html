@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login - Debug</title>
+</head>
+<body>
+    <h1>Login Debug Test</h1>
+    <button onclick="testDemoUsers()">Test Demo Users</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <div id="output"></div>
+
+    <script src="script.js"></script>
+    <script>
+        function testDemoUsers() {
+            // Initialize demo users
+            initializeDemoUsers();
+            
+            // Get users from localStorage
+            const users = JSON.parse(localStorage.getItem('users')) || [];
+            
+            document.getElementById('output').innerHTML = `
+                <h3>Demo Users Test:</h3>
+                <p>Total users: ${users.length}</p>
+                <pre>${JSON.stringify(users, null, 2)}</pre>
+                
+                <h3>Test Login:</h3>
+                <p>Doctor: dr.sarah@hospital.com / doctor123</p>
+                <p>Patient: john.doe@email.com / patient123</p>
+                <p>Admin: admin@hospital.com / admin123</p>
+            `;
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('output').innerHTML = '<p>Storage cleared!</p>';
+        }
+        
+        // Auto-run test on page load
+        window.onload = function() {
+            testDemoUsers();
+        };
+    </script>
+</body>
+</html>

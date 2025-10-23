@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Mini Hospital Appointment System</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <h2>🏥 Mini Hospital - Admin Portal</h2>
+        </div>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="admin-dashboard.html" class="nav-link active">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="doctors.html" class="nav-link">Manage Doctors</a>
+          </li>
+          <li class="nav-item">
+            <a href="patients.html" class="nav-link">Manage Patients</a>
+          </li>
+          <li class="nav-item">
+            <a href="appointments.html" class="nav-link">Manage Appointments</a>
+          </li>
+          <li class="nav-item">
+            <a href="admin-users.html" class="nav-link">Manage Users</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html" class="nav-link logout">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container">
+        <div class="welcome-section">
+          <h1>Admin Dashboard</h1>
+          <p class="welcome-description">
+            Complete system management and oversight for the hospital
+            appointment system.
+          </p>
+        </div>
+
+        <!-- Quick Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3>👥 Total Users</h3>
+            <p id="totalUsersCount">0 Users</p>
+            <a href="admin-users.html" class="card-link">Manage Users</a>
+          </div>
+          <div class="stat-card">
+            <h3>👨‍⚕️ Doctors</h3>
+            <p id="doctorsCount">0 Doctors</p>
+            <a href="doctors.html" class="card-link">Manage Doctors</a>
+          </div>
+          <div class="stat-card">
+            <h3>🧍 Patients</h3>
+            <p id="patientsCount">0 Patients</p>
+            <a href="patients.html" class="card-link">Manage Patients</a>
+          </div>
+          <div class="stat-card">
+            <h3>📅 Appointments</h3>
+            <p id="appointmentsCount">0 Appointments</p>
+            <a href="appointments.html" class="card-link"
+              >Manage Appointments</a
+            >
+          </div>
+        </div>
+
+        <!-- System Overview -->
+        <div class="overview-section">
+          <h2>System Overview</h2>
+          <div class="overview-grid">
+            <div class="overview-card">
+              <h3>Recent Users</h3>
+              <div id="recentUsersList" class="users-list">
+                <!-- Recent users will be loaded here -->
+              </div>
+            </div>
+            <div class="overview-card">
+              <h3>Today's Appointments</h3>
+              <div id="todayAppointmentsList" class="appointments-list">
+                <!-- Today's appointments will be loaded here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <h2>Quick Actions</h2>
+          <div class="action-buttons">
+            <a href="doctors.html" class="action-btn primary">Add Doctor</a>
+            <a href="patients.html" class="action-btn secondary">Add Patient</a>
+            <a href="appointments.html" class="action-btn secondary"
+              >Book Appointment</a
+            >
+            <button onclick="clearAllData()" class="action-btn danger">
+              Clear All Data
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      // Check if user is logged in as admin
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+        if (!currentUser || currentUser.userType !== "admin") {
+          alert("Access denied. Admin privileges required.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Set active navigation
+        setActiveNavigation();
+        loadDashboardData();
+      });
+
+      function setActiveNavigation() {
+        // Remove active class from all nav links
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.classList.remove("active");
+        });
+
+        // Add active class to current page
+        const currentPage = window.location.pathname.split("/").pop();
+        const navLinks = document.querySelectorAll(".nav-link");
+        navLinks.forEach((link) => {
+          if (link.getAttribute("href") === currentPage) {
+            link.classList.add("active");
+          }
+        });
+      }
+
+      function loadDashboardData() {
+        loadTotalUsers();
+        loadDoctorsCount();
+        loadPatientsCount();
+        loadAppointmentsCount();
+        loadRecentUsers();
+        loadTodayAppointments();
+      }
+
+      function loadTotalUsers() {
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        document.getElementById(
+          "totalUsersCount"
+        ).textContent = `${users.length} Users`;
+      }
+
+      function loadDoctorsCount() {
+        const doctors = JSON.parse(localStorage.getItem("doctors")) || [];
+        document.getElementById(
+          "doctorsCount"
+        ).textContent = `${doctors.length} Doctors`;
+      }
+
+      function loadPatientsCount() {
+        const patients = JSON.parse(localStorage.getItem("patients")) || [];
+        document.getElementById(
+          "patientsCount"
+        ).textContent = `${patients.length} Patients`;
+      }
+
+      function loadAppointmentsCount() {
+        const appointments =
+          JSON.parse(localStorage.getItem("appointments")) || [];
+        document.getElementById(
+          "appointmentsCount"
+        ).textContent = `${appointments.length} Appointments`;
+      }
+
+      function loadRecentUsers() {
+        const users = JSON.parse(localStorage.getItem("users")) || [];
+        const recentUsers = users.slice(-5).reverse();
+        const recentUsersList = document.getElementById("recentUsersList");
+
+        if (recentUsers.length === 0) {
+          recentUsersList.innerHTML =
+            '<p class="no-data">No users registered yet.</p>';
+        } else {
+          recentUsersList.innerHTML = recentUsers
+            .map(
+              (user) => `
+                    <div class="user-item">
+                        <strong>${user.fullName}</strong>
+                        <span class="user-type">${user.userType}</span>
+                        <small>${user.dateRegistered}</small>
+                    </div>
+                `
+            )
+            .join("");
+        }
+      }
+
+      function loadTodayAppointments() {
+        const appointments =
+          JSON.parse(localStorage.getItem("appointments")) || [];
+        const today = new Date().toISOString().split("T")[0];
+        const todayAppointments = appointments.filter(
+          (apt) => apt.date === today
+        );
+        const todayList = document.getElementById("todayAppointmentsList");
+
+        if (todayAppointments.length === 0) {
+          todayList.innerHTML = '<p class="no-data">No appointments today.</p>';
+        } else {
+          todayList.innerHTML = todayAppointments
+            .map(
+              (appointment) => `
+                    <div class="appointment-item">
+                        <strong>${appointment.patient}</strong>
+                        <span>with ${appointment.doctor}</span>
+                        <small>${appointment.time}</small>
+                    </div>
+                `
+            )
+            .join("");
+        }
+      }
+
+      function clearAllData() {
+        if (
+          confirm(
+            "Are you sure you want to clear ALL data? This action cannot be undone!"
+          )
+        ) {
+          if (
+            confirm(
+              "This will delete ALL users, doctors, patients, and appointments. Are you absolutely sure?"
+            )
+          ) {
+            localStorage.removeItem("users");
+            localStorage.removeItem("doctors");
+            localStorage.removeItem("patients");
+            localStorage.removeItem("appointments");
+            localStorage.removeItem("currentUser");
+            localStorage.removeItem("isLoggedIn");
+
+            alert(
+              "All data has been cleared. You will be redirected to the login page."
+            );
+            window.location.href = "index.html";
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - Patient Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🏥 Mini Hospital - Patient Portal</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="patient-dashboard.html" class="nav-link">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="patient-appointments.html" class="nav-link">My Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="patient-book.html" class="nav-link active">Book Appointment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>Book New Appointment</h1>
+                <p>Schedule an appointment with one of our doctors</p>
+            </div>
+
+            <!-- Book Appointment Form -->
+            <div class="form-section">
+                <h2>Appointment Details</h2>
+                <form id="appointmentForm" class="appointment-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="appointmentDoctor">Select Doctor:</label>
+                            <select id="appointmentDoctor" name="appointmentDoctor" required>
+                                <option value="">Choose a doctor...</option>
+                                <!-- Options will be populated from localStorage -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="appointmentDate">Date:</label>
+                            <input type="date" id="appointmentDate" name="appointmentDate" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="appointmentTime">Time:</label>
+                            <select id="appointmentTime" name="appointmentTime" required>
+                                <option value="">Choose time...</option>
+                                <option value="09:00">9:00 AM</option>
+                                <option value="10:00">10:00 AM</option>
+                                <option value="11:00">11:00 AM</option>
+                                <option value="12:00">12:00 PM</option>
+                                <option value="14:00">2:00 PM</option>
+                                <option value="15:00">3:00 PM</option>
+                                <option value="16:00">4:00 PM</option>
+                                <option value="17:00">5:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="appointmentType">Appointment Type:</label>
+                            <select id="appointmentType" name="appointmentType">
+                                <option value="General Consultation">General Consultation</option>
+                                <option value="Follow-up">Follow-up</option>
+                                <option value="Emergency">Emergency</option>
+                                <option value="Check-up">Check-up</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointmentNotes">Notes (Optional):</label>
+                        <textarea id="appointmentNotes" name="appointmentNotes" rows="3" placeholder="Any specific concerns or symptoms you'd like to discuss..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Book Appointment</button>
+                </form>
+            </div>
+
+            <!-- Available Doctors -->
+            <div class="doctors-section">
+                <h2>Available Doctors</h2>
+                <div id="availableDoctorsList" class="doctors-grid">
+                    <!-- Available doctors will be loaded here -->
+                </div>
+                <div id="noAvailableDoctors" class="no-data-message" style="display: none;">
+                    <p>No doctors available at the moment.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in and is a patient
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser || currentUser.userType !== 'patient') {
+                alert('Access denied. Please login as a patient.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            loadDoctors();
+            setMinDate();
+            
+            // Handle form submission
+            document.getElementById('appointmentForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                bookAppointment();
+            });
+        });
+
+        function loadDoctors() {
+            const doctors = JSON.parse(localStorage.getItem('doctors')) || [];
+            const doctorSelect = document.getElementById('appointmentDoctor');
+            const doctorsList = document.getElementById('availableDoctorsList');
+            const noDoctorsMsg = document.getElementById('noAvailableDoctors');
+            
+            // Clear existing options
+            doctorSelect.innerHTML = '<option value="">Choose a doctor...</option>';
+            
+            if (doctors.length === 0) {
+                doctorsList.innerHTML = '';
+                noDoctorsMsg.style.display = 'block';
+            } else {
+                noDoctorsMsg.style.display = 'none';
+                
+                // Add doctor options to select
+                doctors.forEach(doctor => {
+                    const option = document.createElement('option');
+                    option.value = `${doctor.name} - ${doctor.specialty}`;
+                    option.textContent = `${doctor.name} - ${doctor.specialty}`;
+                    doctorSelect.appendChild(option);
+                });
+                
+                // Display available doctors
+                doctorsList.innerHTML = doctors.map(doctor => `
+                    <div class="doctor-card">
+                        <div class="doctor-avatar">${doctor.avatar}</div>
+                        <h3>${doctor.name}</h3>
+                        <p class="specialty">${doctor.specialty}</p>
+                        <p class="contact">📧 ${doctor.email}</p>
+                        <p class="contact">📞 ${doctor.phone}</p>
+                        <div class="doctor-info">
+                            <p>${doctor.description}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function setMinDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('appointmentDate').setAttribute('min', today);
+        }
+
+        function bookAppointment() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const doctor = document.getElementById('appointmentDoctor').value;
+            const date = document.getElementById('appointmentDate').value;
+            const time = document.getElementById('appointmentTime').value;
+            const appointmentType = document.getElementById('appointmentType').value;
+            const notes = document.getElementById('appointmentNotes').value;
+            
+            if (!doctor || !date || !time) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+            
+            // Check for time conflicts
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            const conflict = appointments.find(apt => 
+                apt.doctor === doctor && 
+                apt.date === date && 
+                apt.time === time
+            );
+            
+            if (conflict) {
+                alert('This time slot is already booked. Please choose a different time.');
+                return;
+            }
+            
+            // Create appointment object
+            const appointment = {
+                id: Date.now(),
+                patient: `${currentUser.fullName} (Age: ${currentUser.age || 'N/A'})`,
+                doctor: doctor,
+                date: date,
+                time: time,
+                appointmentType: appointmentType,
+                notes: notes,
+                dateBooked: new Date().toLocaleDateString()
+            };
+            
+            // Add to appointments
+            appointments.push(appointment);
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+            
+            // Clear form
+            document.getElementById('appointmentForm').reset();
+            
+            // Show success message
+            alert('Appointment booked successfully! You can view it in "My Appointments".');
+            
+            // Redirect to appointments page
+            window.location.href = 'patient-appointments.html';
+        }
+    </script>
+</body>
+</html>

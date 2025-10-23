@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Users - Admin Portal</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="nav-logo">
+          <h2>🏥 Mini Hospital - Admin Portal</h2>
+        </div>
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="admin-dashboard.html" class="nav-link">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a href="doctors.html" class="nav-link">Manage Doctors</a>
+          </li>
+          <li class="nav-item">
+            <a href="patients.html" class="nav-link">Manage Patients</a>
+          </li>
+          <li class="nav-item">
+            <a href="appointments.html" class="nav-link">Manage Appointments</a>
+          </li>
+          <li class="nav-item">
+            <a href="admin-users.html" class="nav-link active">Manage Users</a>
+          </li>
+          <li class="nav-item">
+            <a href="index.html" class="nav-link logout">Logout</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="container">
+        <div class="page-header">
+          <h1>User Management</h1>
+          <p>Manage all system users and their accounts</p>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="filter-section">
+          <div class="filter-options">
+            <button id="allUsersBtn" class="filter-btn active">
+              All Users
+            </button>
+            <button id="doctorsBtn" class="filter-btn">Doctors</button>
+            <button id="patientsBtn" class="filter-btn">Patients</button>
+          </div>
+          <div class="search-container">
+            <input
+              type="text"
+              id="userSearch"
+              placeholder="Search users..."
+              class="search-input"
+            />
+          </div>
+        </div>
+
+        <!-- Users List -->
+        <div class="users-section">
+          <div class="section-header">
+            <h2>System Users</h2>
+            <div class="user-stats">
+              <span id="userCount">0 users</span>
+            </div>
+          </div>
+
+          <div id="usersList" class="users-list">
+            <!-- Users will be dynamically loaded here -->
+          </div>
+
+          <div
+            id="noUsersMessage"
+            class="no-data-message"
+            style="display: none"
+          >
+            <p>No users found.</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      let currentFilter = "all";
+      let allUsers = [];
+
+      // Check if user is logged in as admin
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+        if (!currentUser || currentUser.userType !== "admin") {
+          alert("Access denied. Admin privileges required.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Set active navigation
+        setActiveNavigation();
+        loadUsers();
+
+        // Filter buttons
+        document
+          .getElementById("allUsersBtn")
+          .addEventListener("click", () => setFilter("all"));
+        document
+          .getElementById("doctorsBtn")
+          .addEventListener("click", () => setFilter("doctor"));
+        document
+          .getElementById("patientsBtn")
+          .addEventListener("click", () => setFilter("patient"));
+
+        // Search functionality
+        document
+          .getElementById("userSearch")
+          .addEventListener("input", function () {
+            filterUsers();
+          });
+      });
+
+      function setActiveNavigation() {
+        // Remove active class from all nav links
+        document.querySelectorAll(".nav-link").forEach((link) => {
+          link.classList.remove("active");
+        });
+
+        // Add active class to current page
+        const currentPage = window.location.pathname.split("/").pop();
+        const navLinks = document.querySelectorAll(".nav-link");
+        navLinks.forEach((link) => {
+          if (link.getAttribute("href") === currentPage) {
+            link.classList.add("active");
+          }
+        });
+      }
+
+      function loadUsers() {
+        allUsers = JSON.parse(localStorage.getItem("users")) || [];
+        displayUsers(allUsers);
+      }
+
+      function setFilter(filter) {
+        currentFilter = filter;
+
+        // Update active button
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document
+          .getElementById(filter + "UsersBtn" || filter + "Btn")
+          .classList.add("active");
+
+        filterUsers();
+      }
+
+      function filterUsers() {
+        let filteredUsers = [...allUsers];
+        const searchTerm = document
+          .getElementById("userSearch")
+          .value.toLowerCase();
+
+        // Apply type filter
+        if (currentFilter !== "all") {
+          filteredUsers = filteredUsers.filter(
+            (user) => user.userType === currentFilter
+          );
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+          filteredUsers = filteredUsers.filter(
+            (user) =>
+              user.fullName.toLowerCase().includes(searchTerm) ||
+              user.email.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        displayUsers(filteredUsers);
+      }
+
+      function displayUsers(users) {
+        const usersList = document.getElementById("usersList");
+        const noUsersMsg = document.getElementById("noUsersMessage");
+        const userCount = document.getElementById("userCount");
+
+        userCount.textContent = `${users.length} users`;
+
+        if (users.length === 0) {
+          usersList.innerHTML = "";
+          noUsersMsg.style.display = "block";
+        } else {
+          noUsersMsg.style.display = "none";
+          usersList.innerHTML = users
+            .map(
+              (user) => `
+                    <div class="user-card">
+                        <div class="user-info">
+                            <h3>${user.fullName}</h3>
+                            <p><strong>Email:</strong> ${user.email}</p>
+                            <p><strong>Phone:</strong> ${user.phone}</p>
+                            <p><strong>Type:</strong> <span class="user-type-badge ${
+                              user.userType
+                            }">${user.userType}</span></p>
+                            <p><strong>Registered:</strong> ${
+                              user.dateRegistered
+                            }</p>
+                            ${
+                              user.specialty
+                                ? `<p><strong>Specialty:</strong> ${user.specialty}</p>`
+                                : ""
+                            }
+                            ${
+                              user.age
+                                ? `<p><strong>Age:</strong> ${user.age}</p>`
+                                : ""
+                            }
+                        </div>
+                        <div class="user-actions">
+                            <button onclick="viewUserDetails(${
+                              user.id
+                            })" class="edit-btn">View Details</button>
+                            <button onclick="deleteUser(${
+                              user.id
+                            })" class="delete-btn">Delete User</button>
+                        </div>
+                    </div>
+                `
+            )
+            .join("");
+        }
+      }
+
+      function viewUserDetails(userId) {
+        const user = allUsers.find((u) => u.id === userId);
+        if (user) {
+          let details = `User Details:\n\n`;
+          details += `Name: ${user.fullName}\n`;
+          details += `Email: ${user.email}\n`;
+          details += `Phone: ${user.phone}\n`;
+          details += `Type: ${user.userType}\n`;
+          details += `Registered: ${user.dateRegistered}\n`;
+          if (user.specialty) details += `Specialty: ${user.specialty}\n`;
+          if (user.licenseNumber) details += `License: ${user.licenseNumber}\n`;
+          if (user.age) details += `Age: ${user.age}\n`;
+          if (user.medicalHistory)
+            details += `Medical History: ${user.medicalHistory}\n`;
+
+          alert(details);
+        }
+      }
+
+      function deleteUser(userId) {
+        if (
+          confirm(
+            "Are you sure you want to delete this user? This action cannot be undone."
+          )
+        ) {
+          let users = JSON.parse(localStorage.getItem("users")) || [];
+          users = users.filter((u) => u.id !== userId);
+          localStorage.setItem("users", JSON.stringify(users));
+
+          loadUsers();
+          alert("User deleted successfully!");
+        }
+      }
+    </script>
+  </body>
+</html>

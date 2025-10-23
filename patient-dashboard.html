@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Mini Hospital Appointment System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🏥 Mini Hospital - Patient Portal</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="patient-dashboard.html" class="nav-link active">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="patient-appointments.html" class="nav-link">My Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="patient-book.html" class="nav-link">Book Appointment</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="welcome-section">
+                <h1>Welcome, <span id="patientName">John Doe</span></h1>
+                <p class="welcome-description">
+                    Manage your appointments and healthcare needs with our patient portal.
+                </p>
+            </div>
+
+            <!-- Quick Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>📅 My Appointments</h3>
+                    <p id="myAppointmentsCount">0 Appointments</p>
+                    <a href="patient-appointments.html" class="card-link">View Appointments</a>
+                </div>
+                <div class="stat-card">
+                    <h3>📅 Upcoming</h3>
+                    <p id="upcomingAppointmentsCount">0 Upcoming</p>
+                    <a href="patient-appointments.html" class="card-link">View Upcoming</a>
+                </div>
+                <div class="stat-card">
+                    <h3>👨‍⚕️ Book New</h3>
+                    <p>Schedule Appointment</p>
+                    <a href="patient-book.html" class="card-link">Book Now</a>
+                </div>
+            </div>
+
+            <!-- Upcoming Appointments -->
+            <div class="appointments-section">
+                <h2>Upcoming Appointments</h2>
+                <div id="upcomingAppointmentsList" class="appointments-list">
+                    <!-- Upcoming appointments will be loaded here -->
+                </div>
+                <div id="noUpcomingAppointments" class="no-data-message" style="display: none;">
+                    <p>No upcoming appointments scheduled.</p>
+                </div>
+            </div>
+
+            <!-- Available Doctors -->
+            <div class="doctors-section">
+                <h2>Available Doctors</h2>
+                <div id="availableDoctorsList" class="doctors-grid">
+                    <!-- Available doctors will be loaded here -->
+                </div>
+                <div id="noAvailableDoctors" class="no-data-message" style="display: none;">
+                    <p>No doctors available at the moment.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in and is a patient
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser || currentUser.userType !== 'patient') {
+                alert('Access denied. Please login as a patient.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Update patient name
+            document.getElementById('patientName').textContent = currentUser.fullName;
+            
+            // Load dashboard data
+            loadDashboardData();
+        });
+
+        function loadDashboardData() {
+            loadMyAppointments();
+            loadUpcomingAppointments();
+            loadAvailableDoctors();
+        }
+
+        function loadMyAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            const myAppointments = appointments.filter(appointment => 
+                appointment.patient.includes(currentUser.fullName)
+            );
+            
+            document.getElementById('myAppointmentsCount').textContent = `${myAppointments.length} Appointments`;
+        }
+
+        function loadUpcomingAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            const today = new Date().toISOString().split('T')[0];
+            
+            const upcomingAppointments = appointments.filter(appointment => 
+                appointment.patient.includes(currentUser.fullName) && 
+                appointment.date >= today
+            ).sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            document.getElementById('upcomingAppointmentsCount').textContent = `${upcomingAppointments.length} Upcoming`;
+            
+            // Display upcoming appointments
+            const upcomingList = document.getElementById('upcomingAppointmentsList');
+            const noUpcomingMsg = document.getElementById('noUpcomingAppointments');
+            
+            if (upcomingAppointments.length === 0) {
+                upcomingList.innerHTML = '';
+                noUpcomingMsg.style.display = 'block';
+            } else {
+                noUpcomingMsg.style.display = 'none';
+                upcomingList.innerHTML = upcomingAppointments.slice(0, 3).map(appointment => `
+                    <div class="appointment-card">
+                        <div class="appointment-info">
+                            <h3>${appointment.doctor}</h3>
+                            <p><strong>Date:</strong> ${appointment.date}</p>
+                            <p><strong>Time:</strong> ${appointment.time}</p>
+                            ${appointment.notes ? `<p><strong>Notes:</strong> ${appointment.notes}</p>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function loadAvailableDoctors() {
+            const doctors = JSON.parse(localStorage.getItem('doctors')) || [];
+            const doctorsList = document.getElementById('availableDoctorsList');
+            const noDoctorsMsg = document.getElementById('noAvailableDoctors');
+            
+            if (doctors.length === 0) {
+                doctorsList.innerHTML = '';
+                noDoctorsMsg.style.display = 'block';
+            } else {
+                noDoctorsMsg.style.display = 'none';
+                doctorsList.innerHTML = doctors.slice(0, 4).map(doctor => `
+                    <div class="doctor-card">
+                        <div class="doctor-avatar">${doctor.avatar}</div>
+                        <h3>${doctor.name}</h3>
+                        <p class="specialty">${doctor.specialty}</p>
+                        <p class="contact">📧 ${doctor.email}</p>
+                        <p class="contact">📞 ${doctor.phone}</p>
+                        <div class="doctor-info">
+                            <p>${doctor.description}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Mini Hospital Appointment System</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-card">
+        <!-- Hospital Logo/Header -->
+        <div class="hospital-header">
+          <h1>🏥Hospital</h1>
+          <h2>Management System</h2>
+        </div>
+
+        <!-- User Type Selection -->
+        <div class="user-type-selection">
+          <button id="doctorLoginBtn" class="user-type-btn active">
+            Doctor Login
+          </button>
+          <button id="patientLoginBtn" class="user-type-btn">
+            Patient Login
+          </button>
+          <button id="adminLoginBtn" class="user-type-btn">Admin Login</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm" class="login-form">
+          <div class="form-group">
+            <label for="username">Username/Email:</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <button type="submit" class="login-btn">Login</button>
+        </form>
+
+        <!-- Registration Link (hidden for admin) -->
+        <div class="registration-link" id="registrationLink">
+          <p>
+            Don't have an account?
+            <a href="#" id="registerLink">Register here</a>
+          </p>
+        </div>
+
+        <!-- Demo Credentials -->
+        <div class="login-info">
+          <p><strong>Demo Credentials:</strong></p>
+          <div id="demoCredentials">
+            <p><strong>Doctor:</strong> dr.sarah@hospital.com / doctor123</p>
+            <p><strong>Patient:</strong> john.doe@email.com / patient123</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentUserType = "doctor";
+
+      // User type selection
+      document
+        .getElementById("doctorLoginBtn")
+        .addEventListener("click", function () {
+          currentUserType = "doctor";
+          this.classList.add("active");
+          document.getElementById("patientLoginBtn").classList.remove("active");
+          document.getElementById("adminLoginBtn").classList.remove("active");
+          updateDemoCredentials();
+          showRegistrationLink();
+        });
+
+      document
+        .getElementById("patientLoginBtn")
+        .addEventListener("click", function () {
+          currentUserType = "patient";
+          this.classList.add("active");
+          document.getElementById("doctorLoginBtn").classList.remove("active");
+          document.getElementById("adminLoginBtn").classList.remove("active");
+          updateDemoCredentials();
+          showRegistrationLink();
+        });
+
+      document
+        .getElementById("adminLoginBtn")
+        .addEventListener("click", function () {
+          currentUserType = "admin";
+          this.classList.add("active");
+          document.getElementById("doctorLoginBtn").classList.remove("active");
+          document.getElementById("patientLoginBtn").classList.remove("active");
+          updateDemoCredentials();
+          hideRegistrationLink();
+        });
+
+      function updateDemoCredentials() {
+        const demoDiv = document.getElementById("demoCredentials");
+        if (currentUserType === "doctor") {
+          demoDiv.innerHTML =
+            "<p><strong>Doctor:</strong> dr.sarah@hospital.com / doctor123</p>";
+        } else if (currentUserType === "patient") {
+          demoDiv.innerHTML =
+            "<p><strong>Patient:</strong> john.doe@email.com / patient123</p>";
+        } else {
+          demoDiv.innerHTML =
+            "<p><strong>Admin:</strong> admin@hospital.com / admin123</p>";
+        }
+      }
+
+      function showRegistrationLink() {
+        document.getElementById("registrationLink").style.display = "block";
+      }
+
+      function hideRegistrationLink() {
+        document.getElementById("registrationLink").style.display = "none";
+      }
+
+      // Login form validation and redirection
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const username = document.getElementById("username").value;
+          const password = document.getElementById("password").value;
+
+          // Ensure demo users are initialized first
+          initializeDemoUsers();
+
+          // Get users from localStorage
+          const users = JSON.parse(localStorage.getItem("users")) || [];
+          console.log("Available users:", users);
+          console.log("Looking for:", { username, password, currentUserType });
+
+          const user = users.find(
+            (u) =>
+              (u.email === username || u.fullName === username) &&
+              u.password === password &&
+              u.userType === currentUserType
+          );
+
+          console.log("Found user:", user);
+
+          if (user) {
+            // Store current user session
+            localStorage.setItem("currentUser", JSON.stringify(user));
+            localStorage.setItem("isLoggedIn", "true");
+
+            // Redirect based on user type
+            if (currentUserType === "doctor") {
+              window.location.href = "doctor-dashboard.html";
+            } else if (currentUserType === "patient") {
+              window.location.href = "patient-dashboard.html";
+            } else {
+              window.location.href = "admin-dashboard.html";
+            }
+          } else {
+            alert(
+              "Invalid credentials. Please check your username and password. Make sure you've selected the correct user type."
+            );
+          }
+        });
+
+      // Registration link
+      document
+        .getElementById("registerLink")
+        .addEventListener("click", function (e) {
+          e.preventDefault();
+          window.location.href = "register.html";
+        });
+
+      // Initialize demo credentials
+      updateDemoCredentials();
+
+      // Ensure demo users are initialized
+      if (typeof initializeDemoUsers === "function") {
+        initializeDemoUsers();
+      }
+    </script>
+    <script src="script.js"></script>
+    <script>
+      // Initialize demo users after script.js loads
+      document.addEventListener("DOMContentLoaded", function () {
+        initializeDemoUsers();
+      });
+    </script>
+  </body>
+</html>

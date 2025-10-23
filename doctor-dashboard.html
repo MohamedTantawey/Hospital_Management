@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Dashboard - Mini Hospital Appointment System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h2>🏥 Mini Hospital - Doctor Portal</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="doctor-dashboard.html" class="nav-link active">Dashboard</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-patients.html" class="nav-link">My Patients</a>
+                </li>
+                <li class="nav-item">
+                    <a href="doctor-appointments.html" class="nav-link">Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="welcome-section">
+                <h1>Welcome, <span id="doctorName">Dr. Sarah Johnson</span></h1>
+                <p class="welcome-description">
+                    Manage your patients and appointments efficiently with our doctor portal.
+                </p>
+            </div>
+
+            <!-- Quick Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>👥 My Patients</h3>
+                    <p id="myPatientsCount">0 Patients</p>
+                    <a href="doctor-patients.html" class="card-link">View Patients</a>
+                </div>
+                <div class="stat-card">
+                    <h3>📅 Today's Appointments</h3>
+                    <p id="todayAppointmentsCount">0 Appointments</p>
+                    <a href="doctor-appointments.html" class="card-link">View Appointments</a>
+                </div>
+                <div class="stat-card">
+                    <h3>📊 Total Appointments</h3>
+                    <p id="totalAppointmentsCount">0 Appointments</p>
+                    <a href="doctor-appointments.html" class="card-link">Manage Schedule</a>
+                </div>
+            </div>
+
+            <!-- Today's Appointments -->
+            <div class="appointments-section">
+                <h2>Today's Appointments</h2>
+                <div id="todayAppointmentsList" class="appointments-list">
+                    <!-- Today's appointments will be loaded here -->
+                </div>
+                <div id="noTodayAppointments" class="no-data-message" style="display: none;">
+                    <p>No appointments scheduled for today.</p>
+                </div>
+            </div>
+
+            <!-- Recent Patients -->
+            <div class="patients-section">
+                <h2>Recent Patients</h2>
+                <div id="recentPatientsList" class="patients-list">
+                    <!-- Recent patients will be loaded here -->
+                </div>
+                <div id="noRecentPatients" class="no-data-message" style="display: none;">
+                    <p>No patients have been seen recently.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in and is a doctor
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            
+            if (!currentUser || currentUser.userType !== 'doctor') {
+                alert('Access denied. Please login as a doctor.');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Update doctor name
+            document.getElementById('doctorName').textContent = currentUser.fullName;
+            
+            // Load dashboard data
+            loadDashboardData();
+        });
+
+        function loadDashboardData() {
+            loadMyPatients();
+            loadTodayAppointments();
+            loadTotalAppointments();
+            loadRecentPatients();
+        }
+
+        function loadMyPatients() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            // Get unique patients for this doctor
+            const myPatients = new Set();
+            appointments.forEach(appointment => {
+                if (appointment.doctor.includes(currentUser.fullName)) {
+                    myPatients.add(appointment.patient);
+                }
+            });
+            
+            document.getElementById('myPatientsCount').textContent = `${myPatients.size} Patients`;
+        }
+
+        function loadTodayAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            const today = new Date().toISOString().split('T')[0];
+            
+            const todayAppointments = appointments.filter(appointment => 
+                appointment.doctor.includes(currentUser.fullName) && 
+                appointment.date === today
+            );
+            
+            document.getElementById('todayAppointmentsCount').textContent = `${todayAppointments.length} Appointments`;
+            
+            // Display today's appointments
+            const todayList = document.getElementById('todayAppointmentsList');
+            const noTodayMsg = document.getElementById('noTodayAppointments');
+            
+            if (todayAppointments.length === 0) {
+                todayList.innerHTML = '';
+                noTodayMsg.style.display = 'block';
+            } else {
+                noTodayMsg.style.display = 'none';
+                todayList.innerHTML = todayAppointments.map(appointment => `
+                    <div class="appointment-card">
+                        <div class="appointment-info">
+                            <h3>${appointment.patient}</h3>
+                            <p><strong>Time:</strong> ${appointment.time}</p>
+                            ${appointment.notes ? `<p><strong>Notes:</strong> ${appointment.notes}</p>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function loadTotalAppointments() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            const myAppointments = appointments.filter(appointment => 
+                appointment.doctor.includes(currentUser.fullName)
+            );
+            
+            document.getElementById('totalAppointmentsCount').textContent = `${myAppointments.length} Appointments`;
+        }
+
+        function loadRecentPatients() {
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+            
+            // Get recent patients (last 5 unique patients)
+            const recentPatients = new Set();
+            const sortedAppointments = appointments
+                .filter(appointment => appointment.doctor.includes(currentUser.fullName))
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            sortedAppointments.forEach(appointment => {
+                if (recentPatients.size < 5) {
+                    recentPatients.add(appointment.patient);
+                }
+            });
+            
+            const recentList = document.getElementById('recentPatientsList');
+            const noRecentMsg = document.getElementById('noRecentPatients');
+            
+            if (recentPatients.size === 0) {
+                recentList.innerHTML = '';
+                noRecentMsg.style.display = 'block';
+            } else {
+                noRecentMsg.style.display = 'none';
+                recentList.innerHTML = Array.from(recentPatients).map(patient => `
+                    <div class="patient-card">
+                        <div class="patient-info">
+                            <h3>${patient}</h3>
+                            <p>Recent patient</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>
