@@ -1,4 +1,4 @@
-# 🏥 Mini Hospital Appointment System
+# 🏥 Hospital Management System
 
 A complete web-based hospital management system with **role-based authentication** for doctors, patients, and administrators. Built with HTML, CSS, and JavaScript - no backend server required!
 
@@ -341,3 +341,4 @@ Created as a comprehensive learning project for HTML, CSS, and JavaScript fundam
 ---
 
 **Note**: This is a client-side only application. All data is stored locally in the browser and will be lost if localStorage is cleared or if you use a different browser/device. For production use, consider implementing a backend database system.
+
